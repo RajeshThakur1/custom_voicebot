@@ -1,0 +1,7 @@
+source venv/bin/activate && alembic init alembic
+
+##Bellow are the codes we can run in order to sync our changes to dabase automatically
+
+alembic revision --autogenerate -m "Initial migration"
+
+alembic upgrade head
