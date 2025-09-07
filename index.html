@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OTP-based Login System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 16px;
+        }
+
+        .step {
+            display: none;
+        }
+
+        .step.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        input[type="tel"], input[type="text"] {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e1e8ed;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        input[type="tel"]:focus, input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .message {
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            font-weight: 500;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .progress {
+            background: #e1e8ed;
+            height: 4px;
+            border-radius: 2px;
+            margin-bottom: 30px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s ease;
+        }
+
+        .back-btn {
+            background: #6c757d;
+            margin-bottom: 10px;
+        }
+
+        .otp-input {
+            text-align: center;
+            font-size: 24px;
+            letter-spacing: 10px;
+            font-weight: bold;
+        }
+
+        .phone-display {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            margin-bottom: 20px;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .step-indicator {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔐 OTP Login</h1>
+            <p>Secure authentication with SMS verification</p>
+        </div>
+
+        <div class="progress">
+            <div class="progress-bar" id="progressBar" style="width: 33%;"></div>
+        </div>
+
+        <!-- Step 1: Phone Number Input -->
+        <div class="step active" id="step1">
+            <div class="step-indicator">Step 1 of 3: Enter your phone number</div>
+            <form id="phoneForm">
+                <div class="form-group">
+                    <label for="phone">Indian Mobile Number</label>
+                    <input type="tel" id="phone" placeholder="9876543210" required>
+                </div>
+                <button type="submit" class="btn" id="sendOtpBtn">
+                    Send OTP
+                </button>
+            </form>
+        </div>
+
+        <!-- Step 2: OTP Input -->
+        <div class="step" id="step2">
+            <div class="step-indicator">Step 2 of 3: Enter the OTP</div>
+            <div class="phone-display" id="phoneDisplay"></div>
+            <form id="otpForm">
+                <div class="form-group">
+                    <label for="otp">Enter 6-digit OTP</label>
+                    <input type="text" id="otp" class="otp-input" maxlength="6" placeholder="000000" required>
+                </div>
+                <button type="submit" class="btn" id="verifyOtpBtn">
+                    Verify OTP
+                </button>
+                <button type="button" class="btn back-btn" onclick="goToStep(1)">
+                    Back
+                </button>
+            </form>
+        </div>
+
+        <!-- Step 3: Result -->
+        <div class="step" id="step3">
+            <div class="step-indicator">Step 3 of 3: Verification Result</div>
+            <div id="resultMessage"></div>
+            <button type="button" class="btn" onclick="resetForm()">
+                Start Over
+            </button>
+        </div>
+
+        <div id="messageContainer"></div>
+    </div>
+
+    <script>
+        let currentPhone = '';
+
+        function showMessage(message, type) {
+            const container = document.getElementById('messageContainer');
+            container.innerHTML = `<div class="message ${type}">${message}</div>`;
+            setTimeout(() => {
+                container.innerHTML = '';
+            }, 5000);
+        }
+
+        function goToStep(step) {
+            // Hide all steps
+            document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+            
+            // Show target step
+            document.getElementById(`step${step}`).classList.add('active');
+            
+            // Update progress bar
+            const progress = (step / 3) * 100;
+            document.getElementById('progressBar').style.width = progress + '%';
+        }
+
+        function resetForm() {
+            document.getElementById('phoneForm').reset();
+            document.getElementById('otpForm').reset();
+            currentPhone = '';
+            goToStep(1);
+        }
+
+        // Phone form submission
+        document.getElementById('phoneForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const phone = document.getElementById('phone').value;
+            const sendBtn = document.getElementById('sendOtpBtn');
+            
+            sendBtn.disabled = true;
+            sendBtn.textContent = 'Sending...';
+            
+            try {
+                const response = await fetch('/send-otp', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ phone: phone })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    currentPhone = data.phone;
+                    document.getElementById('phoneDisplay').textContent = `OTP sent to: ${currentPhone}`;
+                    showMessage(data.message, 'success');
+                    goToStep(2);
+                } else {
+                    showMessage(data.detail || 'Failed to send OTP', 'error');
+                }
+            } catch (error) {
+                showMessage('Network error. Please try again.', 'error');
+            } finally {
+                sendBtn.disabled = false;
+                sendBtn.textContent = 'Send OTP';
+            }
+        });
+
+        // OTP form submission
+        document.getElementById('otpForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const otp = document.getElementById('otp').value;
+            const verifyBtn = document.getElementById('verifyOtpBtn');
+            
+            verifyBtn.disabled = true;
+            verifyBtn.textContent = 'Verifying...';
+            
+            try {
+                const response = await fetch('/verify-otp', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        phone: currentPhone,
+                        otp: otp 
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    document.getElementById('resultMessage').innerHTML = `
+                        <div class="message success">
+                            <strong>✅ Success!</strong><br>
+                            ${data.message}<br>
+                            Phone: ${data.phone}
+                        </div>
+                    `;
+                    goToStep(3);
+                } else {
+                    showMessage(data.detail || 'OTP verification failed', 'error');
+                }
+            } catch (error) {
+                showMessage('Network error. Please try again.', 'error');
+            } finally {
+                verifyBtn.disabled = false;
+                verifyBtn.textContent = 'Verify OTP';
+            }
+        });
+
+        // Auto-format phone number input
+        document.getElementById('phone').addEventListener('input', (e) => {
+            let value = e.target.value.replace(/\D/g, '');
+            
+            // If user types 91 first, treat it as country code
+            if (value.startsWith('91') && value.length > 2) {
+                // Remove 91 and treat rest as 10-digit number
+                let phoneNumber = value.substring(2);
+                if (phoneNumber.length > 10) phoneNumber = phoneNumber.substring(0, 10);
+                if (phoneNumber.length > 0) {
+                    e.target.value = '+91 ' + phoneNumber.replace(/(\d{5})(\d{0,5})/, '$1 $2').trim();
+                } else {
+                    e.target.value = '+91 ';
+                }
+            } else {
+                // Normal 10-digit Indian number
+                if (value.length > 10) value = value.substring(0, 10);
+                if (value.length > 0) {
+                    e.target.value = '+91 ' + value.replace(/(\d{5})(\d{0,5})/, '$1 $2').trim();
+                } else {
+                    e.target.value = '';
+                }
+            }
+        });
+
+        // Auto-submit OTP when 6 digits are entered
+        document.getElementById('otp').addEventListener('input', (e) => {
+            const value = e.target.value.replace(/\D/g, '');
+            e.target.value = value;
+            
+            if (value.length === 6) {
+                setTimeout(() => {
+                    document.getElementById('otpForm').dispatchEvent(new Event('submit'));
+                }, 500);
+            }
+        });
+    </script>
+</body>
+</html>
