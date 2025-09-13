@@ -8,8 +8,9 @@ import sys
 import json
 import shutil
 from app.middlewares.auth_apikey import get_api_key
-
+from app.services.otp_services import send_otp
 from app.utilities.bia_logger import get_logger
+
 logger = get_logger(__name__)
 
 router = APIRouter(
@@ -26,3 +27,9 @@ async def health_check():
     """
     logger.debug("Health check requested")
     return {"message": "Status = Healthy"}
+
+
+@router.post("/send-otp", tags=["Health"])
+async def send_otp_end(phone_data):
+    logger.info(f"Sending OTP to {phone_data}")
+    return send_otp(phone_data)
