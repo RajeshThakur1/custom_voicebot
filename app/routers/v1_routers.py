@@ -33,3 +33,5 @@ async def health_check():
 async def send_otp_end(phone_data):
     logger.info(f"Sending OTP to {phone_data}")
     return send_otp(phone_data)
+
+
