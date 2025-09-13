@@ -12,7 +12,7 @@ import re
 import time
 
 # Load environment variables
-load_dotenv("API.env")
+load_dotenv()
 
 app = FastAPI(title="OTP-based Login System", description="Complete OTP verification system using 2factor.in")
 
