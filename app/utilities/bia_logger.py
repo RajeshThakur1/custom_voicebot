@@ -8,7 +8,7 @@ def get_logger(
     name, level=logging.INFO, file_name=Constants.fetch_constant("base_log_file_path")
 ):
     """logger method to get logger from
-    author: andy
+    author: Rajesh
     Args:
         name (_type_): _description_
     Returns:
