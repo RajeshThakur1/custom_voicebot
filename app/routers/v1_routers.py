@@ -35,3 +35,31 @@ async def send_otp_end(phone_data):
     return send_otp(phone_data)
 
 
+@router.post("/verify-otp")
+async def verify_otp(verification_data: OTPVerification):
+    """Verify the entered OTP"""
+    try:
+        phone = verification_data.phone
+        user_otp = verification_data.otp
+
+        result = otp_service.verify_otp(phone, user_otp)
+
+        if result['success']:
+            return {
+                "success": True,
+                "message": result['message'],
+                "phone": phone
+            }
+        else:
+            raise HTTPException(status_code=400, detail=result['message'])
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.get("/health")
+async def health_check():
+    """Health check endpoint"""
+    return {"status": "healthy", "message": "OTP service is running"}
