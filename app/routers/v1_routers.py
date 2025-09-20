@@ -11,6 +11,7 @@ from app.middlewares.auth_apikey import get_api_key
 from app.services.otp_services import OTPService
 from app.utilities.bia_logger import get_logger
 
+
 logger = get_logger(__name__)
 
 router = APIRouter(
@@ -40,8 +41,12 @@ async def send_otp_end(phone_data):
     # return send_otp(phone_d
 
 
-# @router.post("/verify-otp")
-# async def verify_otp(verification_data: OTPVerification):
+@router.post("/verify-otp",tags=["Health"])
+async def verify_otp(phone_data,otp):
+    logger.info(f"Verifying otp.....")
+    return otp_services.verify_otp(phone_data,otp)
+
+
 #     """Verify the entered OTP"""
 #     try:
 #         phone = verification_data.phone

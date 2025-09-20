@@ -63,4 +63,4 @@ async def healthcheck():
 app.include_router(v1_routers.router, prefix="/v1/custom_voicebot-be")
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=5003)
+    uvicorn.run(app, host="0.0.0.0", port=5002)
