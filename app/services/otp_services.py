@@ -3,14 +3,16 @@ from dotenv import load_dotenv
 from typing import Dict, Optional
 import re
 import time
-
+from pydantic import BaseModel, validator
+import random
+import requests
 # Load environment variables
 load_dotenv()
 
-app = FastAPI(title="OTP-based Login System", description="Complete OTP verification system using 2factor.in")
+# app = FastAPI(title="OTP-based Login System", description="Complete OTP verification system using 2factor.in")
 
 # Templates for HTML rendering
-templates = Jinja2Templates(directory="templates")
+# templates = Jinja2Templates(directory="templates")
 
 # In-memory storage for OTPs (in production, use Redis or database)
 otp_storage: Dict[str, Dict] = {}
@@ -113,5 +115,5 @@ class OTPService:
             return {'success': False, 'message': f'Invalid OTP. Attempts remaining: {3 - stored_data["attempts"]}'}
 
 
-def send_otp(phone_data):
-    return {"otp": 1234}
+# def send_otp(phone_data):
+#     return {"otp": 1234}
