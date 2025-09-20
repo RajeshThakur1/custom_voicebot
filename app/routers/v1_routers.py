@@ -44,7 +44,7 @@ async def send_otp_end(phone_data):
 @router.post("/verify-otp",tags=["Health"])
 async def verify_otp(phone_data,otp):
     logger.info(f"Verifying otp.....")
-    return otp_services.verify_otp(phone_data,otp)
+    return otp_services.verify_otp(phone_data,otp)#
 
 
 #     """Verify the entered OTP"""
