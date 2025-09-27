@@ -1,0 +1,28 @@
+# Phase 1: PDF Processing with OpenAI Embeddings
+# Core web framework
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+python-multipart==0.0.6
+
+# Database
+sqlalchemy==2.0.23
+
+# PDF processing
+pypdf==3.17.1
+pdfminer.six==20221105
+tiktoken==0.5.1
+
+# OpenAI embeddings (primary)
+openai>=1.0.0
+python-dotenv>=1.0.0
+
+# Local embeddings (fallback/optional)
+sentence-transformers==2.7.0
+torch>=2.0.0,<3.0.0
+transformers>=4.30.0,<5.0.0
+numpy>=1.24.0,<2.0.0
+
+# Testing (optional)
+pytest==7.4.3
+requests==2.31.0
