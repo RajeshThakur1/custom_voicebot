@@ -270,6 +270,28 @@ async def get_document(document_id: str, db: Session = Depends(get_db)):
 
 # ---------------------------API 3-----------------------------------
 
+class UserQuery(Base):                                      
+    """Store user queries for tracking"""
+    __tablename__ = "user_queries"
+    
+    id = Column(String, primary_key=True)
+    user_id = Column(String, nullable=False, index=True)
+    query_text = Column(Text, nullable=False)
+    selected_documents = Column(Text)  # JSON array of document IDs
+    embedding = Column(Text)  # JSON array
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class QueryResponseModel(Base):
+    """Store query responses"""
+    __tablename__ = "query_responses"
+    
+    id = Column(String, primary_key=True)
+    query_id = Column(String, ForeignKey("user_queries.id"))
+    response_text = Column(Text)
+    retrieved_chunks = Column(Text)  # JSON array of chunk IDs
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
 def cosine_similarity(vec1: List[float], vec2: List[float]) -> float:
     """Calculate cosine similarity between two vectors."""
     vec1 = np.array(vec1)

@@ -50,6 +50,7 @@ class ErrorResponse(BaseModel):
     error: str
     detail: Optional[str] = None
 
+# ---------------------------API 3-----------------------------------
 
 class QueryRequest(BaseModel):
     """Request to query documents with RAG."""
