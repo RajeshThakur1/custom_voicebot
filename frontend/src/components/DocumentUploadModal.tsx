@@ -5,8 +5,9 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Progress } from './ui/progress';
 import { Upload, FileText, File, X, Image } from 'lucide-react';
+import { APIService } from '../services/api';
 
-interface Document {
+export interface Document {
   id: string;
   name: string;
   type: 'pdf' | 'docx' | 'txt' | 'image';
@@ -100,7 +101,7 @@ export function DocumentUploadModal({ isOpen, onClose, onUpload }: DocumentUploa
     e.preventDefault();
     setIsDragOver(false);
 
-    const files = Array.from(e.dataTransfer.files);
+    const files = Array.from<File>(e.dataTransfer.files as FileList);
     if (files.length > 0) {
       handleFileSelect(files[0]);
     }
@@ -113,40 +114,39 @@ export function DocumentUploadModal({ isOpen, onClose, onUpload }: DocumentUploa
     }
   };
 
-  const handleUpload = () => {
+  const handleUpload = async () => {
     if (!selectedFile) return;
-    
     if (!documentName.trim()) {
       alert('Please enter a document name');
       return;
     }
 
-    setIsUploading(true);
-    setUploadProgress(0);
+    try {
+      setIsUploading(true);
+      setUploadProgress(0);
 
-    // Simulate file upload with progress
-    const interval = setInterval(() => {
-      setUploadProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          
-          // Create new document object
-          const newDocument: Document = {
-            id: `doc-${Date.now()}`,
-            name: documentName.trim(),
-            type: getFileType(selectedFile)!,
-            size: formatFileSize(selectedFile.size),
-            uploadDate: 'Just now',
-            selected: true
-          };
-
-          onUpload(newDocument);
-          handleClose();
-          return 100;
-        }
-        return prev + 10;
+      const response = await APIService.uploadPdf(selectedFile,documentName, (percent) => {
+        setUploadProgress(percent);
       });
-    }, 150);
+
+      const fileType = getFileType(selectedFile)!;
+      const newDocument: Document = {
+        id: String(response.id ?? `doc-${Date.now()}`),
+        name: String(response.name ?? documentName.trim()),
+        type: fileType,
+        size: formatFileSize(selectedFile.size),
+        uploadDate: 'Just now',
+        selected: true,
+      };
+
+      onUpload(newDocument);
+      handleClose();
+    } catch (err) {
+      console.error(err);
+      alert('Failed to upload document. Please try again.');
+      setIsUploading(false);
+      setUploadProgress(0);
+    }
   };
 
   const handleClose = () => {
