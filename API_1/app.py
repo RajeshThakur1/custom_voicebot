@@ -9,7 +9,7 @@ import time
 import uuid
 from typing import List
 
-from fastapi import FastAPI, HTTPException, Depends, UploadFile, File
+from fastapi import FastAPI, HTTPException, Depends, UploadFile, File, Form
 from sqlalchemy.orm import Session
 from dotenv import load_dotenv
 
@@ -109,9 +109,9 @@ async def list_documents(db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/documents/{document_id}/upload", response_model=UploadResponse)
+@app.post("/documents/upload", response_model=UploadResponse)
 async def upload_pdf(
-    document_id: str,
+    document_name: str = Form(...),
     file: UploadFile = File(...),
     db: Session = Depends(get_db)
 ):
@@ -126,31 +126,61 @@ async def upload_pdf(
     
     try:
         # Check if document exists
-        document = db.query(Document).filter(Document.id == document_id).first()
-        if not document:
-            raise HTTPException(status_code=404, detail="Document not found")
+        # document = db.query(Document).filter(Document.id == document_id).first()
+        # if not document:
+        #     raise HTTPException(status_code=404, detail="Document not found")
         
+        if not document_name:
+            raise HTTPException(status_code=404, detail="Document Name is missing")
         # Validate file type
         if not file.filename.lower().endswith('.pdf'):
             raise HTTPException(status_code=400, detail="Only PDF files are supported")
         
+        # Read the first 4 bytes to check for PDF header
+        header = await file.read(4)
+        if header != b'%PDF':
+            raise HTTPException(status_code=400, detail="File content is not a valid PDF")
+        await file.seek(0)  # Reset the pointer if the file will be used again
+
+        # Optional: Try opening file with a PDF library for further validation
+        # try:
+        #     content = await file.read()
+        #     doc = fitz.open(stream=content, filetype="pdf")
+        #     doc.close()
+        # except Exception:
+        #     raise HTTPException(status_code=400, detail="Uploaded file is not a valid PDF")
+        # await file.seek(0)
+        
         # Update document status
-        document.status = "processing"
+        # max_id = db.query(Document.id).order_by(Document.id.desc()).first()
+        # if max_id and max_id[0]:
+        #     document_id = max_id[0] + 1
+        # else:
+        #     document_id = 1
+
+        document_id = str(uuid.uuid4())
+                
+        db_document = Document(
+            id=document_id,
+            name=document_name,
+            file_path="",  # Will be set during upload
+            status="processing"
+        )
         db.commit()
         
         # Save uploaded file
-        file_path = f"./data/uploads/{document_id}.pdf"
+        file_path = f"./data/uploads/{document_name}_{int(time.time() * 1000)}.pdf"
         with open(file_path, "wb") as f:
             content = await file.read()
             f.write(content)
         
-        document.file_path = file_path
+        db_document.file_path = file_path
         db.commit()
         logger.info(f"Saved PDF: {file.filename} -> {file_path}")
         
         # Process PDF: extract text, create chunks, generate embeddings
-        logger.info(f"Processing PDF for document {document_id} with OpenAI embeddings")
-        result = pdf_processor.process_pdf(file_path, document_id)
+        logger.info(f"Processing PDF for document {document_name} with OpenAI embeddings")
+        result = pdf_processor.process_pdf(file_path, document_name)
         
         if not result["chunks"]:
             document.status = "error"
@@ -158,7 +188,7 @@ async def upload_pdf(
             raise HTTPException(status_code=400, detail="No text could be extracted from PDF")
         
         # Update document info
-        document.num_pages = result["num_pages"]
+        db_document.num_pages = result["num_pages"]
         
         # Clear existing chunks for this document (in case of re-upload)
         db.query(Chunk).filter(Chunk.document_id == document_id).delete()
@@ -189,7 +219,7 @@ async def upload_pdf(
                 embeddings_generated += 1
         
         # Mark as ready
-        document.status = "ready"
+        db_document.status = "ready"
         db.commit()
         
         processing_time_ms = int((time.time() - start_time) * 1000)
@@ -241,7 +271,6 @@ async def get_document(document_id: str, db: Session = Depends(get_db)):
         **response.model_dump(),
         "chunk_count": chunk_count
     }
-
 
 if __name__ == "__main__":
     import uvicorn
